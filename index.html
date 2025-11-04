@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ROAS CPI Calculator</title>
+    <style>
+      /* Global Styles */
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background-color: #f4f7f6;
+        color: #333;
+        margin: 0;
+        padding: 20px;
+      }
+
+      /* Header */
+      header {
+        text-align: center;
+        border-bottom: 2px solid #ddd;
+        padding-bottom: 20px;
+        margin-bottom: 30px;
+      }
+
+      header h1 {
+        color: #2c3e50;
+        margin: 0;
+      }
+
+      header p {
+        font-size: 1.1em;
+        color: #555;
+      }
+
+      /* --- Main Controls --- */
+      .controls {
+        text-align: center;
+        margin: 30px 0;
+      }
+
+      .primary-button {
+        background-color: #2c3e50;
+        color: white;
+        padding: 14px 28px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 1.2em;
+        font-weight: 600;
+        transition: background-color 0.3s ease;
+      }
+
+      .primary-button:hover {
+        background-color: #34495e;
+      }
+
+      .secondary-button {
+        background-color: #ecf0f1;
+        color: #2c3e50;
+        padding: 8px 16px;
+        border: 1px solid #bdc3c7;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: 500;
+        transition: background-color 0.3s ease;
+      }
+
+      .secondary-button:hover {
+        background-color: #dde1e2;
+      }
+
+      /* --- Modal --- */
+      .modal {
+        display: none; /* Hidden by default */
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.4);
+        animation: fadeIn 0.3s ease;
+        cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="white" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.854 4.146a.5.5 0 0 1 0 .708L8.707 8l3.147 3.146a.5.5 0 0 1-.708.708L8 8.707l-3.146 3.147a.5.5 0 0 1-.708-.708L7.293 8 4.146 4.854a.5.5 0 1 1 .708-.708L8 7.293l3.146-3.147a.5.5 0 0 1 .708 0z"/></svg>'),
+          auto;
+      }
+
+      .modal-content {
+        background-color: #fefefe;
+        margin: 10% auto;
+        padding: 25px 30px;
+        border: 1px solid #888;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 600px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        animation: slideIn 0.3s ease-out;
+        cursor: auto;
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 15px;
+        margin-bottom: 20px;
+      }
+
+      .modal-header h2 {
+        margin: 0;
+        color: #2c3e50;
+      }
+
+      .close-button {
+        color: #aaa;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        line-height: 1;
+      }
+
+      .close-button:hover,
+      .close-button:focus {
+        color: #333;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateY(-50px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      /* --- File Input List in Modal --- */
+      #fileInputList {
+        margin-bottom: 20px;
+        max-height: 300px;
+        overflow-y: auto;
+        padding-right: 10px;
+      }
+
+      .file-input-row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 15px;
+      }
+
+      .file-input-row input[type="text"] {
+        flex-grow: 1;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 0.95em;
+      }
+
+      .file-input-row input[type="file"] {
+        font-size: 0.9em;
+        /* Hide the default bulky input */
+        width: 0.1px;
+        height: 0.1px;
+        opacity: 0;
+        overflow: hidden;
+        position: absolute;
+        z-index: -1;
+      }
+
+      .file-input-row .file-label {
+        padding: 10px 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+
+      .file-input-row .file-label:hover {
+        background-color: #f0f0f0;
+      }
+
+      .file-input-row .file-name {
+        font-size: 0.9em;
+        color: #555;
+        margin-left: 5px;
+        font-style: italic;
+      }
+      .file-input-row .row-number,
+      .file-input-row-processed .row-number {
+        font-weight: 600;
+        color: #555;
+        width: 20px; /* Give it a fixed width */
+        flex-shrink: 0;
+        text-align: left;
+      }
+
+      .file-input-row-processed span {
+        font-weight: 500;
+        color: #555;
+      }
+      .file-input-row-processed {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+        padding: 10px;
+        background-color: #f9f9f9;
+        border-radius: 4px;
+        border: 1px solid #eee;
+      }
+
+      .file-input-row-processed span {
+        font-weight: 500;
+        color: #555;
+        font-style: italic;
+      }
+
+      .remove-row-btn {
+        background: #fdfdfd;
+        border: 1px solid #ddd;
+        color: #777;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        font-size: 1.2em;
+        line-height: 26px;
+        text-align: center;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+      }
+
+      .remove-row-btn:hover {
+        background: #e74c3c;
+        color: white;
+        border-color: #e74c3c;
+      }
+
+      .modal-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center; /* Align items vertically */
+        margin-top: 20px;
+      }
+
+      /* --- Results Section --- */
+      #resultsContainer {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 20px;
+        max-width: 1600px;
+        margin: 20px auto;
+      }
+
+      #placeholderMessage {
+        text-align: center;
+        font-size: 1.2em;
+        color: #777;
+        width: 100%;
+      }
+
+      .result-card {
+        background: #ffffff;
+        border-radius: 8px;
+        padding: 25px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+        /* Ensure card doesn't get too wide on large screens */
+        max-width: 500px;
+        margin: 0 auto;
+      }
+
+      .result-card h3 {
+        margin-top: 0;
+        margin-bottom: 20px;
+        color: #2c3e50;
+        font-size: 1.25em;
+        word-wrap: break-word;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
+        text-align: center; /* 1. Center the title */
+      }
+
+      .result-card table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 1em;
+      }
+
+      .result-card th,
+      .result-card td {
+        padding: 12px 8px;
+        /* 1. Center align all content */
+        text-align: center;
+        border-bottom: 1px solid #f0f0f0;
+        /* 2. Add vertical lines */
+        border-right: 1px solid #f0f0f0;
+      }
+
+      /* 3. Remove border from the last cell in a row */
+      .result-card th:last-child,
+      .result-card td:last-child {
+        border-right: none;
+      }
+
+      .result-card th {
+        color: #555;
+        font-weight: 600;
+      }
+
+      .result-card tbody tr:last-child td {
+        border-bottom: 2px solid #ddd;
+      }
+
+      .result-card tfoot td {
+        font-weight: 600;
+      }
+
+      .result-card .final-cpi-row td {
+        font-size: 1.2em;
+        font-weight: 700;
+        color: #27ae60;
+        border-bottom: none;
+      }
+
+      .result-card .final-cpi-row td:last-child {
+        font-size: 1.3em;
+      }
+
+      .result-card.result-error {
+        background-color: #fff6f6;
+        border: 1px solid #e74c3c;
+        text-align: center;
+      }
+
+      .result-card.result-error .error-message {
+        color: #e74c3c;
+        font-size: 1.1em;
+        font-weight: 600;
+      }
+
+      /* 2. Added styles for the new summary section */
+      .result-summary {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 2px solid #ddd;
+      }
+      .summary-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 1.1em;
+        margin-bottom: 10px;
+        padding: 5px 0;
+      }
+      .summary-item span {
+        color: #555;
+        font-weight: 500;
+      }
+      .summary-item strong {
+        color: #333;
+        font-weight: 600;
+        font-size: 1.15em;
+      }
+      .summary-item.main-cpi {
+        margin-top: 10px;
+      }
+      .summary-item.main-cpi span {
+        font-weight: 600;
+        font-size: 1.1em;
+        color: #2c3e50;
+      }
+      .summary-item.main-cpi strong {
+        font-size: 1.4em;
+        font-weight: 700;
+        color: #27ae60;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Target CPI Calculator (ROAS)</h1>
+      <p>Calculate 100% ROAS Target CPI from your campaign CSVs.</p>
+    </header>
+
+    <main>
+      <!-- Main "Add Files" button -->
+      <div class="controls">
+        <button id="showUploadModalButton" class="primary-button">
+          Add & Process Files
+        </button>
+      </div>
+
+      <!-- This is where the result tables will be injected -->
+      <div id="resultsContainer">
+        <p id="placeholderMessage">
+          No files processed yet. Click "Add & Process Files" to start.
+        </p>
+      </div>
+    </main>
+
+    <!-- The Modal -->
+    <div id="uploadModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Upload Campaign CSVs</h2>
+          <span id="closeModalButton" class="close-button">&times;</span>
+        </div>
+
+        <div id="fileInputList">
+          <!-- File input rows will be injected here by JS -->
+        </div>
+
+        <div class="modal-footer">
+          <div>
+            <button id="addFileRowButton" class="secondary-button">
+              + Add Another File
+            </button>
+            <!-- 1. Added the "Clear All Data" button -->
+            <button
+              id="clearAllButton"
+              class="secondary-button"
+              style="
+                margin-left: 10px;
+                background-color: #f1c40f;
+                border-color: #f39c12;
+              "
+            >
+              Clear All Results
+            </button>
+          </div>
+          <button id="processFilesButton" class="primary-button">
+            Process Files
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      // --- CONFIGURATION ---
+      const CURRENCY_CONVERSION_RATE = 86;
+      let processedCampaigns = []; // This will store our history
+
+      // --- DOM REFERENCES ---
+      const showUploadModalButton = document.getElementById(
+        "showUploadModalButton"
+      );
+      const uploadModal = document.getElementById("uploadModal");
+      const closeModalButton = document.getElementById("closeModalButton");
+      const addFileRowButton = document.getElementById("addFileRowButton");
+      const processFilesButton = document.getElementById("processFilesButton");
+      const fileInputList = document.getElementById("fileInputList");
+      const resultsContainer = document.getElementById("resultsContainer");
+      const placeholderMessage = document.getElementById("placeholderMessage");
+      // 1. Get reference to new button
+      const clearAllButton = document.getElementById("clearAllButton");
+
+      // --- MODAL CONTROLS ---
+      showUploadModalButton.addEventListener("click", () => {
+        // Clear the list *before* showing
+        while (fileInputList.firstChild) {
+          fileInputList.removeChild(fileInputList.firstChild);
+        }
+
+        let rowCounter = 1;
+
+        // Re-add all processed files as static, numbered rows
+        processedCampaigns.forEach((campaign) => {
+          const row = document.createElement("div");
+          row.className = "file-input-row-processed"; // Use the new class
+          row.innerHTML = `
+            <span class="row-number">${rowCounter}.</span>
+            <span>${campaign.campaignName} (Processed)</span>
+          `;
+          fileInputList.appendChild(row);
+          rowCounter++;
+        });
+
+        // Add one new, blank row for the user to add a file, with the next number
+        addFileInputRow(rowCounter);
+
+        uploadModal.style.display = "block";
+      });
+
+      // 2. Add click listener for the new "Clear All Results" button
+      clearAllButton.addEventListener("click", () => {
+        // Clear results on the page
+        resultsContainer.innerHTML = "";
+        placeholderMessage.style.display = "block"; // Show placeholder again
+
+        // --- THIS IS THE FIX ---
+        // Clear the history array
+        processedCampaigns = [];
+
+        // Clear the file list in the modal
+        while (fileInputList.firstChild) {
+          fileInputList.removeChild(fileInputList.firstChild);
+        }
+        // --- END OF FIX ---
+      });
+      closeModalButton.addEventListener("click", () => {
+        uploadModal.style.display = "none";
+      });
+      window.addEventListener("click", (event) => {
+        if (event.target === uploadModal) {
+          uploadModal.style.display = "none";
+        }
+      });
+      closeModalButton.addEventListener("click", () => {
+        uploadModal.style.display = "none";
+      });
+
+      window.addEventListener("click", (event) => {
+        if (event.target === uploadModal) {
+          uploadModal.style.display = "none";
+        }
+      });
+
+      // --- FILE ROW MANAGEMENT ---
+      addFileRowButton.addEventListener("click", () => {
+        // Add a new row, numbering it based on how many rows (processed + new) already exist
+        const currentRowCount = fileInputList.children.length;
+        addFileInputRow(currentRowCount + 1);
+      });
+
+      function addFileInputRow(rowNum) {
+        // Use a unique ID for the label/input association
+        const inputId = `file-input-${crypto.randomUUID()}`;
+
+        const row = document.createElement("div");
+        row.className = "file-input-row";
+        row.innerHTML = `
+                <span class="row-number">${rowNum}.</span>
+                <input type="text" placeholder="Optional: Campaign Name">
+                <input type="file" id="${inputId}" class="file-input" accept=".csv">
+                <label for="${inputId}" class="file-label">Browse...</label>
+                <span class="file-name">No file selected</span>
+                <button class="remove-row-btn" title="Remove row">&times;</button>
+            `;
+
+        // We get references to the new elements *before* adding the row to the page.
+        const fileInput = row.querySelector(`#${inputId}`);
+        const fileNameSpan = row.querySelector(".file-name");
+        const removeBtn = row.querySelector(".remove-row-btn");
+
+        // Add event listener for the new file input
+        fileInput.addEventListener("change", (e) => {
+          const fileName =
+            e.target.files.length > 0
+              ? e.target.files[0].name
+              : "No file selected";
+          fileNameSpan.textContent = fileName;
+        });
+
+        // Add event listener for the remove button
+        removeBtn.addEventListener("click", () => {
+          row.remove();
+          // NOTE: We will not re-number rows on remove, it's simpler.
+          // The numbers will just have a gap, e.g. "1, 2, 4".
+        });
+
+        // *Now* we add the fully-functional row to the list
+        fileInputList.appendChild(row);
+      }
+
+      // --- FILE PROCESSING ---
+      processFilesButton.addEventListener("click", async () => {
+        placeholderMessage.style.display = "none"; // Hide placeholder
+
+        // --- THIS IS THE FIX ---
+        // Find only the *new* rows that have file inputs
+        const allRows = fileInputList.querySelectorAll(".file-input-row");
+        // --- END OF FIX ---
+
+        const filesToProcess = [];
+
+        allRows.forEach((row) => {
+          const fileInput = row.querySelector(".file-input");
+          const nameInput = row.querySelector("input[type='text']");
+
+          if (fileInput.files.length > 0) {
+            filesToProcess.push({
+              file: fileInput.files[0],
+              customName: nameInput.value.trim() || fileInput.files[0].name,
+            });
+          }
+        });
+
+        if (filesToProcess.length === 0) {
+          alert("Please select at least one new file to process."); // Updated message
+          return;
+        }
+
+        // Set loading state
+        processFilesButton.disabled = true;
+        processFilesButton.textContent = "Processing...";
+
+        for (const item of filesToProcess) {
+          const result = await processFile(item.file, item.customName);
+          renderResultTable(result);
+
+          // --- THIS IS THE FIX ---
+          // If processing was successful, add it to our history
+          if (!result.error) {
+            processedCampaigns.push(result);
+          }
+          // --- END OF FIX ---
+        }
+
+        // --- THIS IS THE FIX ---
+        // DO NOT clear the list. Just close the modal.
+        // The list will be rebuilt next time the modal is opened.
+        // --- END OF FIX ---
+
+        processFilesButton.disabled = false;
+        processFilesButton.textContent = "Process Files";
+
+        // Automatically close the modal after processing
+        uploadModal.style.display = "none";
+      });
+
+      function processFile(file, campaignName) {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            try {
+              const csvText = e.target.result;
+              const data = parseCSVAndCalculate(csvText);
+              resolve({ campaignName, ...data });
+            } catch (error) {
+              console.error(`Error parsing ${campaignName}:`, error);
+              resolve({
+                campaignName,
+                error: error.message || "Failed to parse CSV",
+              });
+            }
+          };
+          reader.onerror = () => {
+            console.error(`Error reading file ${campaignName}`);
+            resolve({ campaignName, error: "Failed to read file" });
+          };
+          reader.readAsText(file);
+        });
+      }
+
+      /**
+       * Finds the index of a column header.
+       * @param {string[]} headers - Array of header strings
+       * @param {...string} names - Possible names for the column
+       * @returns {number} - The index of the header, or -1 if not found
+       */
+      function findHeaderIndex(headers, ...names) {
+        for (const name of names) {
+          const index = headers.indexOf(name.toLowerCase());
+          if (index !== -1) return index;
+        }
+        return -1;
+      }
+
+      function parseCSVAndCalculate(csvText) {
+        // 2. UPDATED data structure
+        const placementData = {
+          Interstitial: { apu: 0, ecpm: 0, revenue: 0 },
+          Reward: { apu: 0, ecpm: 0, revenue: 0 },
+          Banner: { apu: 0, ecpm: 0, revenue: 0 },
+        };
+
+        const lines = csvText.trim().split("\n");
+        if (lines.length < 2)
+          throw new Error("CSV is empty or has no data rows.");
+
+        const headers = lines[0]
+          .split(",")
+          .map((h) => h.trim().replace(/"/g, "").toLowerCase());
+
+        const placementIndex = findHeaderIndex(headers, "placementtype");
+        const apuIndex = findHeaderIndex(
+          headers,
+          "impressions per user",
+          "ad impr/ user"
+        );
+        const ecpmIndex = findHeaderIndex(headers, "ad ecpm", "ecpm");
+
+        if (placementIndex === -1 || apuIndex === -1 || ecpmIndex === -1) {
+          let missing = [];
+          if (placementIndex === -1) missing.push("PLACEMENTTYPE");
+          if (apuIndex === -1)
+            missing.push("IMPRESSIONS PER USER / Ad Impr/ User");
+          if (ecpmIndex === -1) missing.push("AD ECPM / Ecpm");
+          throw new Error(`Missing columns: ${missing.join(", ")}`);
+        }
+
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i]
+            .split(",")
+            .map((v) => v.trim().replace(/"/g, ""));
+          if (values.length < headers.length) continue;
+
+          const placement = values[placementIndex]?.toLowerCase();
+          const apu = parseFloat(values[apuIndex]);
+          const ecpm = parseFloat(values[ecpmIndex]);
+
+          if (!placement || isNaN(apu) || isNaN(ecpm)) continue;
+
+          const revenue = (ecpm * apu) / 1000;
+
+          // 2. UPDATED to assign full data object
+          if (placement.includes("interstitial")) {
+            placementData.Interstitial = { apu, ecpm, revenue };
+          } else if (placement.includes("reward")) {
+            placementData.Reward = { apu, ecpm, revenue };
+          } else if (placement.includes("banner")) {
+            placementData.Banner = { apu, ecpm, revenue };
+          }
+        }
+
+        // 2. UPDATED to sum from new structure
+        const totalARPU =
+          placementData.Interstitial.revenue +
+          placementData.Reward.revenue +
+          placementData.Banner.revenue;
+        const targetCPI_INR = totalARPU * CURRENCY_CONVERSION_RATE;
+
+        return {
+          revenueDetails: placementData, // Return the full data
+          totalARPU,
+          targetCPI_INR,
+        };
+      }
+
+      // --- RENDER RESULTS ---
+      function renderResultTable(result) {
+        const card = document.createElement("div");
+        card.className = "result-card";
+
+        if (result.error) {
+          card.classList.add("result-error");
+          card.innerHTML = `
+                    <h3>${result.campaignName}</h3>
+                    <p class="error-message">Calculation Failed</p>
+                    <p>${result.error}</p>
+                `;
+        } else {
+          card.innerHTML = `
+                    <h3>${result.campaignName}</h3>
+                    <table>
+                        <thead>
+                            <!-- 3. UPDATED table header -->
+                            <tr>
+                                <th>Placement</th>
+                                <th>Ad Impr / User</th>
+                                <th>eCPM</th>
+                                <th>Revenue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 3. UPDATED table body -->
+                            <tr>
+                                <td>Interstitial</td>
+                                <td>${result.revenueDetails.Interstitial.apu.toFixed(
+                                  3
+                                )}</td>
+                                <td>$${result.revenueDetails.Interstitial.ecpm.toFixed(
+                                  3
+                                )}</td>
+                                <td>$${result.revenueDetails.Interstitial.revenue.toFixed(
+                                  6
+                                )}</td>
+                            </tr>
+                            <tr>
+                                <td>Reward</td>
+                                <td>${result.revenueDetails.Reward.apu.toFixed(
+                                  3
+                                )}</td>
+                                <td>$${result.revenueDetails.Reward.ecpm.toFixed(
+                                  3
+                                )}</td>
+                                <td>$${result.revenueDetails.Reward.revenue.toFixed(
+                                  6
+                                )}</td>
+                            </tr>
+                            <tr>
+                                <td>Banner</td>
+                                <td>${result.revenueDetails.Banner.apu.toFixed(
+                                  3
+                                )}</td>
+                                <td>$${result.revenueDetails.Banner.ecpm.toFixed(
+                                  3
+                                )}</td>
+                                <!-- 3. Fixed the broken <div> tag here -->
+                                <td>$${result.revenueDetails.Banner.revenue.toFixed(
+                                  6
+                                )}</td>
+                            </tr>
+                        </tbody>
+                        <!-- 4. Removed the <tfoot> element -->
+                    </table>
+                    <!-- 4. Added the new summary div -->
+                    <div class="result-summary">
+                        <div class="summary-item">
+                            <span>Total ARPU (USD)</span>
+                            <strong>$${result.totalARPU.toFixed(6)}</strong>
+                        </div>
+                        <div class="summary-item main-cpi">
+                            <span>Target CPI (INR)</span>
+                            <strong>₹${result.targetCPI_INR.toFixed(2)}</strong>
+                        </div>
+                    </div>
+                `;
+        }
+        resultsContainer.appendChild(card);
+      }
+    </script>
+  </body>
+</html>
